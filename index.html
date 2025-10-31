@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notlarım - Her Şey Veri</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            color: #764ba2;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        
+        .note-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 20px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        
+        .note-input:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+        
+        .btn-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: bold;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .save-btn {
+            background: #667eea;
+            color: white;
+            flex: 1;
+        }
+        
+        .clear-btn {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .notes-list {
+            margin-top: 30px;
+        }
+        
+        .note-item {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .note-time {
+            color: #764ba2;
+            font-size: 0.85em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .note-content {
+            color: #333;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        
+        .delete-note {
+            background: #e74c3c;
+            color: white;
+            padding: 5px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📝 Not Defterim</h1>
+        <p class="subtitle">Her şey aslında bir veri. Sen de verisin.</p>
+        
+        <textarea 
+            class="note-input" 
+            id="noteInput" 
+            placeholder="Notlarını buraya yaz... Hatırlatma için kaydet."></textarea>
+        
+        <div class="btn-container">
+            <button class="save-btn" onclick="saveNote()">💾 Notu Kaydet</button>
+            <button class="clear-btn" onclick="clearInput()">🗑️ Temizle</button>
+        </div>
+        
+        <div class="notes-list">
+            <h2 style="color: #667eea; margin-bottom: 20px;">Kaydedilmiş Notlar:</h2>
+            <div id="notesList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Sayfa yüklendiğinde notları göster
+        window.onload = function() {
+            displayNotes();
+        };
+
+        function saveNote() {
+            const noteInput = document.getElementById('noteInput');
+            const noteText = noteInput.value.trim();
+            
+            if (noteText === '') {
+                alert('Lütfen bir not yazın!');
+                return;
+            }
+            
+            // Mevcut notları al
+            let notes = JSON.parse(localStorage.getItem('notes') || '[]');
+            
+            // Yeni notu ekle
+            const newNote = {
+                id: Date.now(),
+                content: noteText,
+                timestamp: new Date().toLocaleString('tr-TR')
+            };
+            
+            notes.unshift(newNote); // En başa ekle
+            
+            // Kaydet
+            localStorage.setItem('notes', JSON.stringify(notes));
+            
+            // Temizle ve göster
+            noteInput.value = '';
+            displayNotes();
+            
+            alert('Not kaydedildi! ✅');
+        }
+
+        function clearInput() {
+            document.getElementById('noteInput').value = '';
+        }
+
+        function displayNotes() {
+            const notes = JSON.parse(localStorage.getItem('notes') || '[]');
+            const notesList = document.getElementById('notesList');
+            
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div class="empty-state">Henüz kaydedilmiş not yok. Yukarıdan not ekleyebilirsin.</div>';
+                return;
+            }
+            
+            notesList.innerHTML = notes.map(note => `
+                <div class="note-item">
+                    <div class="note-time">📅 ${note.timestamp}</div>
+                    <div class="note-content">${escapeHtml(note.content)}</div>
+                    <button class="delete-note" onclick="deleteNote(${note.id})">Sil</button>
+                </div>
+            `).join('');
+        }
+
+        function deleteNote(id) {
+            if (!confirm('Bu notu silmek istediğinden emin misin?')) {
+                return;
+            }
+            
+            let notes = JSON.parse(localStorage.getItem('notes') || '[]');
+            notes = notes.filter(note => note.id !== id);
+            localStorage.setItem('notes', JSON.stringify(notes));
+            displayNotes();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Enter tuşu ile kaydetme (Ctrl/Cmd + Enter)
+        document.getElementById('noteInput').addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                saveNote();
+            }
+        });
+    </script>
+</body>
+</html>
